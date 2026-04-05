@@ -4,9 +4,9 @@
  ⬡  StudyAI
 ```
 
-# BCA Smart Study Planner
+#  Smart Study Planner
 
-**AI-powered exam preparation for BCA students.**  
+**AI-powered exam preparation for  students.**  
 Enter your subjects. Get a complete, prioritised, day-by-day study plan — in under a minute.
 
 <br/>
@@ -196,7 +196,7 @@ The formula naturally surfaces what matters most. A hard subject with a short wi
 
 ## Built for
 
-BCA students across India preparing for semester exams. Works equally well for any student with multiple subjects and fixed exam dates.
+CS students across India preparing for semester exams. Works equally well for any student with multiple subjects and fixed exam dates.
 
 ---
 
