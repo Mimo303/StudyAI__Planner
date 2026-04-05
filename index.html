@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StudyAI — BCA Smart Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+<style>
+/* ═══════════════════════════════════════════
+   StudyAI · BCA Smart Planner · Single File
+   Dark-gold academic theme · Syne + DM Sans
+═══════════════════════════════════════════ */
+:root{
+  --bg:#0c0e13;--bg2:#12151c;--bg3:#181c26;--card:#1c2030;
+  --border:#252a38;--gold:#f0c040;--gold-dim:#b8922e;
+  --gold-glow:rgba(240,192,64,.16);--teal:#34d4ae;
+  --red:#ff6b6b;--text:#e4e8f2;--text-dim:#7e88a4;
+  --text-faint:#3e4560;--easy:#4ade80;--medium:#fb923c;--hard:#f87171;
+  --r:13px;--rs:8px;--tr:.26s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 70% 45% at 15% 8%,rgba(240,192,64,.07) 0%,transparent 60%),
+             radial-gradient(ellipse 55% 40% at 85% 92%,rgba(52,212,174,.05) 0%,transparent 60%);
+  pointer-events:none;z-index:0}
+
+/* ── Header ─────────────────────────────── */
+.hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:1.1rem 1.8rem;border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:20;backdrop-filter:blur(14px);
+  background:rgba(12,14,19,.82)}
+.logo{display:flex;align-items:center;gap:.45rem;font-family:'Syne',sans-serif;font-size:1.35rem;color:var(--text)}
+.logo-icon{font-size:1.5rem;color:var(--gold)}
+.logo strong{color:var(--gold)}
+.hdr-badge{background:var(--gold-glow);border:1px solid rgba(240,192,64,.3);
+  color:var(--gold);font-size:.68rem;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;padding:.28rem .7rem;border-radius:999px}
+
+/* API Key bar */
+.api-bar{background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:.7rem 1.8rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+.api-bar label{font-size:.72rem;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--text-dim);white-space:nowrap}
+.api-bar input{flex:1;min-width:220px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--rs);color:var(--text);font-family:'DM Sans',sans-serif;
+  font-size:.88rem;padding:.5rem .9rem;outline:none;transition:border-color var(--tr),box-shadow var(--tr)}
+.api-bar input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-glow)}
+.api-bar a{font-size:.72rem;color:var(--gold-dim);text-decoration:none;white-space:nowrap}
+.api-bar a:hover{color:var(--gold)}
+.api-status{font-size:.72rem;padding:.25rem .65rem;border-radius:999px;
+  border:1px solid var(--border);color:var(--text-faint)}
+.api-status.ok{color:var(--easy);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.07)}
+.api-status.err{color:var(--red);border-color:rgba(255,107,107,.3);background:rgba(255,107,107,.07)}
+
+/* ── Progress ───────────────────────────── */
+.prog-wrap{padding:.9rem 1.8rem 0;background:var(--bg);position:relative;z-index:5}
+.prog-bar-bg{height:2px;background:var(--border);border-radius:99px;overflow:hidden}
+.prog-bar{height:100%;background:var(--gold);border-radius:99px;width:20%;
+  transition:width .5s cubic-bezier(.4,0,.2,1);box-shadow:0 0 10px var(--gold)}
+.prog-steps{display:flex;margin-top:.45rem;border-bottom:1px solid var(--border);padding-bottom:.45rem}
+.prog-steps .s{flex:1;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-faint);font-family:'Syne',sans-serif;font-weight:600;transition:color var(--tr)}
+.prog-steps .s.active{color:var(--gold)}
+
+/* ── Screens ────────────────────────────── */
+.screen{display:none;position:relative;z-index:1;animation:sIn .38s ease}
+.screen.active{display:block}
+@keyframes sIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.inner{max-width:740px;margin:0 auto;padding:2.2rem 1.8rem 4rem}
+.center-screen{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 160px)}
+
+/* ── Screen headers ─────────────────────── */
+.stag{display:inline-block;font-family:'Syne',sans-serif;font-size:.66rem;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--gold);
+  background:var(--gold-glow);border:1px solid rgba(240,192,64,.28);
+  padding:.22rem .65rem;border-radius:999px;margin-bottom:.7rem}
+.sh h1{font-family:'Syne',sans-serif;font-size:clamp(1.7rem,4vw,2.6rem);
+  font-weight:800;color:var(--text);line-height:1.14;margin-bottom:.35rem}
+.sh h1 em{font-style:normal;color:var(--gold)}
+.sh p{color:var(--text-dim);font-size:.92rem;font-weight:300}
+.sh{margin-bottom:1.8rem}
+
+/* ── Subject rows ───────────────────────── */
+.subj-row{display:grid;grid-template-columns:1fr .95fr auto;gap:.65rem;align-items:end;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:.95rem 1.1rem;margin-bottom:.7rem;
+  transition:border-color var(--tr),box-shadow var(--tr)}
+.subj-row:hover{border-color:var(--gold-dim);box-shadow:0 0 0 3px var(--gold-glow)}
+.rnum{font-family:'Syne',sans-serif;font-size:.66rem;font-weight:700;
+  color:var(--gold);letter-spacing:.07em;grid-column:1/-1;margin-bottom:.2rem}
+.fw{display:flex;flex-direction:column;gap:.28rem}
+.fw label{font-size:.68rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim)}
+input[type=text],input[type=date]{background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--rs);color:var(--text);font-family:'DM Sans',sans-serif;
+  font-size:.9rem;padding:.58rem .88rem;width:100%;outline:none;
+  transition:border-color var(--tr),box-shadow var(--tr)}
+input[type=text]:focus,input[type=date]:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-glow)}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.55) sepia(1) hue-rotate(10deg) saturate(2);cursor:pointer}
+.btn-rem{background:transparent;border:1px solid var(--border);color:var(--text-faint);
+  width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:.95rem;
+  display:flex;align-items:center;justify-content:center;transition:all var(--tr)}
+.btn-rem:hover{background:rgba(255,107,107,.14);border-color:var(--red);color:var(--red)}
+
+/* ── Buttons ────────────────────────────── */
+.btn-p,.btn-s,.btn-g,.btn-cta{font-family:'Syne',sans-serif;font-weight:700;
+  border:none;cursor:pointer;border-radius:var(--rs);transition:all var(--tr);letter-spacing:.04em}
+.btn-p{background:var(--gold);color:#0c0e13;padding:.72rem 1.7rem;font-size:.88rem}
+.btn-p:hover{background:#ffd84d;transform:translateY(-1px);box-shadow:0 6px 22px rgba(240,192,64,.38)}
+.btn-s{background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:.72rem 1.4rem;font-size:.88rem}
+.btn-s:hover{border-color:var(--text-dim);color:var(--text)}
+.btn-g{background:transparent;border:1px dashed var(--border);color:var(--text-dim);
+  padding:.65rem 1.4rem;font-size:.84rem;width:100%;margin-top:.4rem;
+  border-radius:var(--rs);display:flex;align-items:center;justify-content:center;gap:.4rem}
+.btn-g:hover{border-color:var(--gold-dim);color:var(--gold);background:var(--gold-glow)}
+.btn-cta{background:linear-gradient(135deg,var(--teal),#1a9e80);color:#0c0e13;padding:.82rem 1.9rem;font-size:.92rem}
+.btn-cta:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(52,212,174,.38)}
+.sfooter{display:flex;justify-content:space-between;align-items:center;margin-top:1.4rem}
+.hint{font-size:.78rem;color:var(--text-faint)}
+
+/* ── Difficulty cards ───────────────────── */
+.diff-card{background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.1rem 1.3rem;margin-bottom:.8rem;
+  transition:border-color var(--tr)}
+.diff-card:hover{border-color:var(--gold-dim)}
+.dch{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem}
+.dcn{font-family:'Syne',sans-serif;font-size:.97rem;font-weight:700}
+.dcd{font-size:.74rem;color:var(--text-dim);background:var(--bg3);
+  padding:.22rem .55rem;border-radius:999px}
+.diff-btns{display:flex;gap:.55rem}
+.dbtn{flex:1;padding:.55rem;border-radius:var(--rs);border:1.5px solid var(--border);
+  background:var(--bg3);color:var(--text-dim);cursor:pointer;
+  font-family:'Syne',sans-serif;font-size:.76rem;font-weight:700;
+  text-align:center;transition:all var(--tr)}
+.dbtn[data-l=Easy]   {--c:var(--easy)}
+.dbtn[data-l=Medium] {--c:var(--medium)}
+.dbtn[data-l=Hard]   {--c:var(--hard)}
+.dbtn.sel{border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c)}
+.dbtn:hover{border-color:var(--c)}
+
+/* ── Hex spinner ────────────────────────── */
+.aw{text-align:center;max-width:460px;width:100%}
+.hs{width:96px;height:96px;position:relative;margin:0 auto 1.9rem}
+.hx{position:absolute;width:18px;height:18px;border:2px solid var(--gold);
+  border-radius:4px;animation:hpulse 2.4s linear infinite;opacity:.55}
+.hxc{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:1.9rem;color:var(--gold);animation:bpulse 1.5s ease-in-out infinite}
+.h1{top:0;left:50%;transform:translateX(-50%);animation-delay:0s}
+.h2{top:20%;right:0;animation-delay:.4s}.h3{bottom:20%;right:0;animation-delay:.8s}
+.h4{bottom:0;left:50%;transform:translateX(-50%);animation-delay:1.2s}
+.h5{bottom:20%;left:0;animation-delay:1.6s}.h6{top:20%;left:0;animation-delay:2s}
+@keyframes hpulse{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:.85;transform:scale(1.2)}}
+@keyframes bpulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.15)}}
+.at{font-family:'Syne',sans-serif;font-size:1.55rem;font-weight:800;margin-bottom:1.4rem}
+.as-list{text-align:left}
+.astep{padding:.6rem .95rem;margin-bottom:.45rem;border-radius:var(--rs);
+  border:1px solid var(--border);background:var(--card);color:var(--text-faint);
+  font-size:.85rem;transition:all .4s ease}
+.astep.active{border-color:var(--gold);color:var(--gold);background:var(--gold-glow)}
+.astep.done{border-color:var(--teal);color:var(--teal);background:rgba(52,212,174,.08)}
+
+/* ── Section label ──────────────────────── */
+.slbl{font-family:'Syne',sans-serif;font-size:.68rem;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);
+  margin:1.7rem 0 .8rem;padding-bottom:.45rem;border-bottom:1px solid var(--border)}
+
+/* ── Advice banner ──────────────────────── */
+.abanner{background:linear-gradient(135deg,rgba(240,192,64,.1),rgba(52,212,174,.07));
+  border:1px solid rgba(240,192,64,.28);border-radius:var(--r);
+  padding:1rem 1.3rem;font-size:.9rem;color:var(--text);line-height:1.62}
+.abanner strong{color:var(--gold)}
+
+/* ── Priority grid ──────────────────────── */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.8rem}
+.pcard{background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:1rem 1.1rem;position:relative;overflow:hidden;
+  transition:transform var(--tr),box-shadow var(--tr)}
+.pcard:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.28)}
+.pcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.pcard.r1::before{background:var(--gold)}.pcard.r2::before{background:#a0a0a0}
+.pcard.r3::before{background:#c07830}.pcard.rx::before{background:var(--border)}
+.prk{font-family:'Syne',sans-serif;font-size:.62rem;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:.38rem}
+.pcard.r1 .prk{color:var(--gold)}.pcard.r2 .prk{color:#a0a0a0}
+.pcard.r3 .prk{color:#c07830}.pcard.rx .prk{color:var(--text-faint)}
+.pnm{font-family:'Syne',sans-serif;font-size:.96rem;font-weight:700;margin-bottom:.55rem}
+.pmeta{display:flex;gap:.42rem;flex-wrap:wrap}
+.ptag{font-size:.67rem;padding:.18rem .52rem;border-radius:999px;
+  background:var(--bg3);color:var(--text-dim);border:1px solid var(--border)}
+.ptag.Easy  {color:var(--easy);border-color:rgba(74,222,128,.28);background:rgba(74,222,128,.07)}
+.ptag.Medium{color:var(--medium);border-color:rgba(251,146,60,.28);background:rgba(251,146,60,.07)}
+.ptag.Hard  {color:var(--hard);border-color:rgba(248,113,113,.28);background:rgba(248,113,113,.07)}
+.pscore{margin-top:.55rem;font-size:.74rem;color:var(--text-faint);font-family:'Syne',sans-serif}
+.pscore span{color:var(--text-dim);font-weight:600}
+
+/* ── Hours grid ─────────────────────────── */
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.7rem}
+.hcard{background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:.95rem 1.1rem;display:flex;align-items:center;gap:.9rem}
+.hbar-w{flex:1}
+.hsubj{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;margin-bottom:.38rem}
+.hbar-bg{background:var(--bg3);border-radius:99px;height:5px;overflow:hidden}
+.hbar-f{height:100%;background:linear-gradient(90deg,var(--gold),var(--teal));
+  border-radius:99px;transition:width 1s ease}
+.hnum{font-family:'Syne',sans-serif;font-size:1.18rem;font-weight:800;
+  color:var(--gold);white-space:nowrap;text-align:center}
+.hnum span{font-size:.62rem;color:var(--text-faint);display:block}
+
+/* ── Strategy list ──────────────────────── */
+.strat-item{background:var(--card);border:1px solid var(--border);
+  border-left:3px solid var(--gold);border-radius:var(--r);
+  padding:.95rem 1.1rem;margin-bottom:.7rem}
+.strat-subj{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;
+  color:var(--gold);margin-bottom:.3rem}
+.strat-txt{font-size:.86rem;color:var(--text-dim);line-height:1.65}
+
+/* ── Tips ───────────────────────────────── */
+.tips-list{display:flex;flex-direction:column;gap:.55rem}
+.tip-item{display:flex;align-items:flex-start;gap:.7rem;padding:.75rem .95rem;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--rs);
+  font-size:.86rem;color:var(--text-dim);line-height:1.55}
+.ti{font-size:.95rem;flex-shrink:0;margin-top:.05rem}
+
+/* ── Schedule ───────────────────────────── */
+.sched-list{display:flex;flex-direction:column;gap:.7rem}
+.si{background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:1rem 1.2rem;display:grid;grid-template-columns:auto 1fr auto;
+  gap:.9rem;align-items:start;transition:border-color var(--tr)}
+.si:hover{border-color:var(--gold-dim)}
+.sdn{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;
+  color:var(--text-faint);line-height:1;min-width:2.3rem}
+.sdate{font-size:.72rem;color:var(--text-faint);margin-bottom:.18rem}
+.ssubj{font-family:'Syne',sans-serif;font-size:.97rem;font-weight:700;margin-bottom:.45rem}
+.stasks{display:flex;flex-wrap:wrap;gap:.38rem}
+.stask{font-size:.72rem;padding:.18rem .52rem;background:var(--bg3);
+  border:1px solid var(--border);border-radius:999px;color:var(--text-dim)}
+.stip{margin-top:.45rem;font-size:.76rem;color:var(--text-faint);font-style:italic}
+.shrs{text-align:right}
+.shrsn{font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;color:var(--teal)}
+.shrsl{font-size:.62rem;color:var(--text-faint);display:block;
+  text-transform:uppercase;letter-spacing:.06em}
+
+/* ── Celebration ────────────────────────── */
+.celeb{position:fixed;inset:0;background:rgba(12,14,19,.93);display:none;
+  align-items:center;justify-content:center;z-index:1000;animation:fIn .38s ease}
+.celeb.on{display:flex}
+@keyframes fIn{from{opacity:0}to{opacity:1}}
+.cbox{background:var(--card);border:1px solid var(--border);border-radius:18px;
+  padding:2.8rem;text-align:center;max-width:400px;
+  animation:popIn .48s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+.cemoji{font-size:3.8rem;margin-bottom:.9rem}
+.cbox h2{font-family:'Syne',sans-serif;font-size:1.75rem;font-weight:800;
+  color:var(--gold);margin-bottom:.65rem}
+.cbox p{color:var(--text-dim);font-size:.9rem;line-height:1.65;margin-bottom:1.4rem}
+
+/* ── Toast ──────────────────────────────── */
+.toast{position:fixed;bottom:1.8rem;right:1.8rem;
+  background:rgba(255,107,107,.14);border:1px solid var(--red);color:var(--red);
+  padding:.8rem 1.1rem;border-radius:var(--rs);font-size:.86rem;z-index:999;
+  max-width:300px;animation:slideUp .28s ease}
+@keyframes slideUp{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ── Responsive ─────────────────────────── */
+@media(max-width:580px){
+  .subj-row{grid-template-columns:1fr 1fr}
+  .pgrid,.hgrid{grid-template-columns:1fr 1fr}
+  .si{grid-template-columns:auto 1fr}
+  .shrs{grid-column:2;grid-row:1;justify-self:end}
+  .api-bar{gap:.5rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────── -->
+<header class="hdr">
+  <div class="logo"><span class="logo-icon">⬡</span><span>Study<strong>AI</strong></span></div>
+  <div class="hdr-badge">BCA Edition</div>
+</header>
+
+<!-- ── API Key Bar ──────────────────────────────── -->
+<div class="api-bar">
+  <label>🔑 Groq API Key</label>
+  <input type="password" id="apiKeyInput" placeholder="Paste your Groq API key here (gsk_...)" oninput="checkKey()" />
+  <span class="api-status" id="apiStatus">Not set</span>
+  <a href="https://console.groq.com" target="_blank">Get free key →</a>
+</div>
+
+<!-- ── Progress ─────────────────────────────────── -->
+<div class="prog-wrap">
+  <div class="prog-bar-bg"><div class="prog-bar" id="progBar"></div></div>
+  <div class="prog-steps">
+    <span class="s active" data-n="1">Subjects</span>
+    <span class="s" data-n="2">Difficulty</span>
+    <span class="s" data-n="3">Analysis</span>
+    <span class="s" data-n="4">Summary</span>
+    <span class="s" data-n="5">Schedule</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 1 — Add Subjects
+══════════════════════════════════════════ -->
+<section class="screen active" id="s1">
+<div class="inner">
+  <div class="sh">
+    <div class="stag">Step 01</div>
+    <h1>Add Your <em>Subjects</em></h1>
+    <p>Enter each subject and its exam date. Up to 8 subjects.</p>
+  </div>
+  <div id="subjList"></div>
+  <button class="btn-g" onclick="addRow()"><span style="font-size:1.1rem">+</span> Add Another Subject</button>
+  <div class="sfooter">
+    <div class="hint">📅 Dates must be in the future</div>
+    <button class="btn-p" onclick="go2()">Next →</button>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 2 — Difficulty
+══════════════════════════════════════════ -->
+<section class="screen" id="s2">
+<div class="inner">
+  <div class="sh">
+    <div class="stag">Step 02</div>
+    <h1>Rate the <em>Difficulty</em></h1>
+    <p>How hard is each subject for you personally?</p>
+  </div>
+  <div id="diffList"></div>
+  <div class="sfooter">
+    <button class="btn-s" onclick="sw(2,1)">← Back</button>
+    <button class="btn-p" onclick="go3()">Continue →</button>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 3 — AI Analysis
+══════════════════════════════════════════ -->
+<section class="screen" id="s3">
+<div class="inner center-screen">
+  <div class="aw">
+    <div class="hs">
+      <div class="hx h1"></div><div class="hx h2"></div><div class="hx h3"></div>
+      <div class="hx h4"></div><div class="hx h5"></div><div class="hx h6"></div>
+      <div class="hxc">⬡</div>
+    </div>
+    <h2 class="at">Analyzing Your Plan</h2>
+    <div class="as-list">
+      <div class="astep active" id="as1">⟳ Sorting subjects by exam date…</div>
+      <div class="astep" id="as2">⟳ Calculating exam gaps…</div>
+      <div class="astep" id="as3">⟳ Computing priority scores…</div>
+      <div class="astep" id="as4">⟳ Generating AI study strategies…</div>
+      <div class="astep" id="as5">⟳ Building day-wise schedule…</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 4 — Summary
+══════════════════════════════════════════ -->
+<section class="screen" id="s4">
+<div class="inner">
+  <div class="sh">
+    <div class="stag">Step 04</div>
+    <h1>Your Smart <em>Study Plan</em></h1>
+    <p id="genDate"></p>
+  </div>
+  <div class="abanner" id="advBanner"></div>
+  <div class="slbl">Priority Rankings</div>
+  <div class="pgrid" id="prioGrid"></div>
+  <div class="slbl">Daily Hours Allocation</div>
+  <div class="hgrid" id="hoursGrid"></div>
+  <div class="slbl">Subject Strategies</div>
+  <div id="stratList"></div>
+  <div class="slbl">AI Revision Tips</div>
+  <div class="tips-list" id="tipsList"></div>
+  <div class="sfooter" style="margin-top:2rem">
+    <div></div>
+    <button class="btn-p" onclick="go5()">View Detailed Schedule →</button>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 5 — Day-wise Schedule
+══════════════════════════════════════════ -->
+<section class="screen" id="s5">
+<div class="inner">
+  <div class="sh">
+    <div class="stag">Step 05</div>
+    <h1>Day-wise <em>Schedule</em></h1>
+    <p>Your complete exam preparation roadmap</p>
+  </div>
+  <div class="sched-list" id="schedList"></div>
+  <div class="sfooter" style="margin-top:2rem">
+    <button class="btn-s" onclick="sw(5,4)">← Back</button>
+    <button class="btn-cta" onclick="celebrate()">🚀 Start Studying!</button>
+  </div>
+</div>
+</section>
+
+<!-- ── Celebration ──────────────────────────────── -->
+<div class="celeb" id="celeb">
+  <div class="cbox">
+    <div class="cemoji">🎓</div>
+    <h2>You're All Set!</h2>
+    <p>Your personalised study plan is ready. Stay consistent, take breaks, and believe in yourself. You've got this!</p>
+    <button class="btn-p" onclick="reset()">Plan Another Exam →</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   StudyAI · All-in-one JS
+   - Multi-step navigation
+   - Priority / gap calculation (Python logic in JS)
+   - Groq API call (llama-3.3-70b-versatile)
+   - UI rendering
+═══════════════════════════════════════════════ */
+
+// ── State ─────────────────────────────────────
+let subjects = [];   // [{name,exam_date,difficulty}, ...]
+let planData  = null;
+
+// ── Boot ──────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  addRow(); addRow(); addRow();
+  loadKey();
+});
+
+// ── API Key helpers ───────────────────────────
+function loadKey(){
+  const k = localStorage.getItem('groq_key');
+  if(k){ document.getElementById('apiKeyInput').value = k; setStatus(true); }
+}
+function checkKey(){
+  const v = document.getElementById('apiKeyInput').value.trim();
+  if(v){ localStorage.setItem('groq_key', v); setStatus(true); }
+  else { localStorage.removeItem('groq_key'); setStatus(false); }
+}
+function setStatus(ok){
+  const el = document.getElementById('apiStatus');
+  el.textContent = ok ? '✓ Key saved' : 'Not set';
+  el.className   = 'api-status ' + (ok ? 'ok' : 'err');
+}
+function getKey(){ return document.getElementById('apiKeyInput').value.trim(); }
+
+// ── Subject rows (Screen 1) ───────────────────
+function addRow(){
+  const list = document.getElementById('subjList');
+  if(list.children.length >= 8){ toast('Maximum 8 subjects.'); return; }
+  const n = list.children.length + 1;
+  const tom = new Date(); tom.setDate(tom.getDate()+1);
+  const min = tom.toISOString().split('T')[0];
+  const d = document.createElement('div');
+  d.className = 'subj-row';
+  d.innerHTML = `
+    <div class="rnum">Subject ${n}</div>
+    <div class="fw">
+      <label>Subject Name</label>
+      <input type="text" class="sn" placeholder="e.g. Data Structures" />
+    </div>
+    <div class="fw">
+      <label>Exam Date</label>
+      <input type="date" class="sd" min="${min}" />
+    </div>
+    <button class="btn-rem" onclick="remRow(this)" title="Remove">✕</button>`;
+  list.appendChild(d);
+}
+function remRow(btn){
+  const list = document.getElementById('subjList');
+  if(list.children.length <= 1){ toast('Need at least 1 subject.'); return; }
+  btn.closest('.subj-row').remove();
+  [...list.children].forEach((r,i)=>{ const l=r.querySelector('.rnum'); if(l) l.textContent=`Subject ${i+1}`; });
+}
+
+// ── Screen 1 → 2 ─────────────────────────────
+function go2(){
+  const rows=[...document.querySelectorAll('.subj-row')];
+  const today=new Date(); today.setHours(0,0,0,0);
+  const col=[];
+  for(const r of rows){
+    const nm=r.querySelector('.sn').value.trim();
+    const dt=r.querySelector('.sd').value;
+    if(!nm||!dt){ toast('Fill in all subject names and exam dates.'); return; }
+    if(new Date(dt)<=today){ toast(`"${nm}" — exam date must be in the future.`); return; }
+    col.push({name:nm, exam_date:dt, difficulty:'Medium'});
+  }
+  subjects=col;
+  buildDiff();
+  sw(1,2);
+}
+
+// ── Build difficulty screen ───────────────────
+function buildDiff(){
+  const list=document.getElementById('diffList');
+  list.innerHTML='';
+  subjects.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='diff-card';
+    d.innerHTML=`
+      <div class="dch">
+        <div class="dcn">${s.name}</div>
+        <div class="dcd">📅 ${fmtDate(s.exam_date)}</div>
+      </div>
+      <div class="diff-btns">
+        <button class="dbtn" data-l="Easy"   data-i="${i}" onclick="selDiff(this)">😊 Easy</button>
+        <button class="dbtn" data-l="Medium" data-i="${i}" onclick="selDiff(this)">🤔 Medium</button>
+        <button class="dbtn" data-l="Hard"   data-i="${i}" onclick="selDiff(this)">🔥 Hard</button>
+      </div>`;
+    list.appendChild(d);
+    d.querySelector('[data-l="Medium"]').classList.add('sel');
+  });
+}
+function selDiff(btn){
+  const i=btn.dataset.i;
+  btn.closest('.diff-card').querySelectorAll('.dbtn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  subjects[i].difficulty=btn.dataset.l;
+}
+
+// ── Screen 2 → 3 → API ───────────────────────
+async function go3(){
+  if(!getKey()){ toast('Please paste your Groq API key at the top first.'); return; }
+  sw(2,3);
+  await runAnalysis();
+}
+
+async function runAnalysis(){
+  // Animate steps
+  const delays=[400,1100,1900,2800,4000];
+  delays.forEach((ms,idx)=>{
+    setTimeout(()=>{
+      const prev=document.getElementById(`as${idx}`);
+      const curr=document.getElementById(`as${idx+1}`);
+      if(prev&&idx>0){ prev.classList.remove('active'); prev.classList.add('done');
+        prev.textContent='✓ '+prev.textContent.slice(2); }
+      if(curr) curr.classList.add('active');
+    }, ms);
+  });
+
+  // ── Python-style AI logic in JS ──────────────
+  const today = new Date(); today.setHours(0,0,0,0);
+  const WEIGHTS = {Easy:1,Medium:2,Hard:3};
+
+  // 1. Parse
+  let subs = subjects.map(s=>{
+    const exam   = new Date(s.exam_date+'T00:00:00');
+    const daysLeft = Math.max(Math.round((exam-today)/(86400000)), 0);
+    return {...s, weight:WEIGHTS[s.difficulty]||1, days_left:daysLeft, gap_days:null, priority:null, rank:null};
+  });
+
+  // 2. Sort by date
+  subs.sort((a,b)=>a.exam_date.localeCompare(b.exam_date));
+
+  // 3. Gap + priority
+  subs.forEach((s,i)=>{
+    let gap;
+    if(i===0){ gap=Math.max(s.days_left,1); }
+    else{
+      const prev=new Date(subs[i-1].exam_date+'T00:00:00');
+      const curr=new Date(s.exam_date+'T00:00:00');
+      gap=Math.max(Math.round((curr-prev)/86400000),1);
+    }
+    s.gap_days = gap;
+    s.priority = +(s.weight/gap).toFixed(4);
+  });
+
+  // 4. Rank
+  const byPrio=[...subs].sort((a,b)=>b.priority-a.priority);
+  byPrio.forEach((s,i)=>s.rank=i+1);
+
+  const byDate = subs;
+
+  // ── Call Groq API ─────────────────────────────
+  const todayStr = today.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const subjectLines = byPrio.map(s=>
+    `  - ${s.name} | Exam: ${s.exam_date} | Difficulty: ${s.difficulty} | Days Left: ${s.days_left} | Gap Days: ${s.gap_days} | Priority Score: ${s.priority} | Rank: #${s.rank}`
+  ).join('\n');
+
+  const prompt=`You are an expert academic advisor for BCA (Bachelor of Computer Applications) students in India.
+
+Today's Date: ${todayStr}
+
+A student has the following subjects and exams (already ranked by AI priority score):
+
+${subjectLines}
+
+Priority Score Formula: difficulty_weight / gap_days
+(Hard=3, Medium=2, Easy=1 — higher score = study this FIRST)
+
+Generate a comprehensive, friendly, and practical study plan. Structure your response as a JSON object with EXACTLY this format (no markdown, no code fences, just raw JSON):
+
+{
+  "priority_order": ["Subject1", "Subject2"],
+  "start_first": "SubjectName",
+  "can_delay": "SubjectName",
+  "study_hours": { "SubjectName": 4 },
+  "subject_strategies": { "SubjectName": "2-3 sentence strategy." },
+  "revision_tips": ["Tip 1","Tip 2","Tip 3"],
+  "day_wise_schedule": [
+    { "day": 1, "date": "YYYY-MM-DD", "focus_subject": "SubjectName", "hours": 4, "tasks": ["Task 1","Task 2","Task 3"], "tip": "Motivational tip" }
+  ],
+  "overall_advice": "2-3 sentences of overall advice for BCA students."
+}
+
+Rules:
+- day_wise_schedule must cover ALL days until the LAST exam date
+- Max 8 hours per day, minimum 3
+- Increase hours as exam approaches
+- Include revision days before each exam
+- Return ONLY valid JSON — absolutely no extra text`;
+
+  try {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+getKey()
+      },
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        temperature:0.7,
+        max_tokens:4000,
+        messages:[
+          {role:'system', content:'You are a helpful academic advisor. Respond with valid JSON only. No markdown, no code fences, no explanation.'},
+          {role:'user',   content:prompt}
+        ]
+      })
+    });
+
+    if(!resp.ok){
+      const err=await resp.json();
+      throw new Error(err.error?.message || 'Groq API error');
+    }
+
+    const data=await resp.json();
+    let txt=data.choices[0].message.content.trim();
+
+    // Strip code fences if model added them
+    if(txt.startsWith('```')){ txt=txt.split('\n').slice(1,-1).join('\n'); }
+
+    const aiPlan=JSON.parse(txt);
+
+    planData={
+      subjects_by_date:byDate,
+      subjects_by_priority:byPrio,
+      ai_plan:aiPlan,
+      generated_on:todayStr
+    };
+
+    // Wait for animations to finish then go to screen 4
+    setTimeout(()=>{ buildSummary(planData); sw(3,4); }, 5000);
+
+  } catch(e){
+    console.error(e);
+    toast('Error: '+e.message);
+    setTimeout(()=>sw(3,2), 800);
+  }
+}
+
+// ── Build Summary (Screen 4) ──────────────────
+function buildSummary(data){
+  const plan=data.ai_plan;
+  const byPrio=data.subjects_by_priority;
+
+  document.getElementById('genDate').textContent='Generated on '+data.generated_on;
+
+  // Advice
+  document.getElementById('advBanner').innerHTML=
+    `<strong>🧠 Start with:</strong> ${plan.start_first} &nbsp;|&nbsp; <strong>⏳ Can delay:</strong> ${plan.can_delay}<br><br>${plan.overall_advice}`;
+
+  // Priority cards
+  const pg=document.getElementById('prioGrid'); pg.innerHTML='';
+  byPrio.forEach((s,i)=>{
+    const rc=i===0?'r1':i===1?'r2':i===2?'r3':'rx';
+    const rl=i===0?'🥇 #1 Priority':i===1?'🥈 #2 Priority':i===2?'🥉 #3 Priority':`#${i+1}`;
+    const c=document.createElement('div');
+    c.className=`pcard ${rc}`;
+    c.innerHTML=`
+      <div class="prk">${rl}</div>
+      <div class="pnm">${s.name}</div>
+      <div class="pmeta">
+        <span class="ptag ${s.difficulty}">${s.difficulty}</span>
+        <span class="ptag">📅 ${fmtDate(s.exam_date)}</span>
+        <span class="ptag">⏱ ${s.gap_days}d gap</span>
+      </div>
+      <div class="pscore">Score: <span>${s.priority}</span></div>`;
+    pg.appendChild(c);
+  });
+
+  // Hours
+  const hg=document.getElementById('hoursGrid'); hg.innerHTML='';
+  const maxH=Math.max(...Object.values(plan.study_hours));
+  for(const[subj,hrs] of Object.entries(plan.study_hours)){
+    const pct=Math.round((hrs/maxH)*100);
+    const c=document.createElement('div');
+    c.className='hcard';
+    c.innerHTML=`
+      <div class="hbar-w">
+        <div class="hsubj">${subj}</div>
+        <div class="hbar-bg"><div class="hbar-f" style="width:${pct}%"></div></div>
+      </div>
+      <div class="hnum">${hrs}<span>hrs/day</span></div>`;
+    hg.appendChild(c);
+  }
+
+  // Strategies
+  const sl=document.getElementById('stratList'); sl.innerHTML='';
+  for(const[subj,strat] of Object.entries(plan.subject_strategies)){
+    sl.innerHTML+=`<div class="strat-item"><div class="strat-subj">📖 ${subj}</div><div class="strat-txt">${strat}</div></div>`;
+  }
+
+  // Tips
+  const tl=document.getElementById('tipsList'); tl.innerHTML='';
+  const icons=['💡','⏰','🎯','🧘','📝','🔁'];
+  plan.revision_tips.forEach((tip,i)=>{
+    tl.innerHTML+=`<div class="tip-item"><span class="ti">${icons[i%icons.length]}</span><span>${tip}</span></div>`;
+  });
+}
+
+// ── Screen 4 → 5 ─────────────────────────────
+function go5(){ buildSchedule(planData); sw(4,5); }
+
+function buildSchedule(data){
+  const sch=data.ai_plan.day_wise_schedule;
+  const list=document.getElementById('schedList'); list.innerHTML='';
+  sch.forEach(day=>{
+    const tasks=(day.tasks||[]).map(t=>`<span class="stask">${t}</span>`).join('');
+    const el=document.createElement('div');
+    el.className='si';
+    el.innerHTML=`
+      <div class="sdn">D${day.day}</div>
+      <div>
+        <div class="sdate">${fmtDate(day.date)}</div>
+        <div class="ssubj">📚 ${day.focus_subject}</div>
+        <div class="stasks">${tasks}</div>
+        ${day.tip?`<div class="stip">💬 ${day.tip}</div>`:''}
+      </div>
+      <div class="shrs">
+        <div class="shrsn">${day.hours}</div>
+        <span class="shrsl">hours</span>
+      </div>`;
+    list.appendChild(el);
+  });
+}
+
+// ── Celebration & Reset ───────────────────────
+function celebrate(){ document.getElementById('celeb').classList.add('on'); }
+function reset(){
+  document.getElementById('celeb').classList.remove('on');
+  subjects=[]; planData=null;
+  document.getElementById('subjList').innerHTML='';
+  addRow(); addRow(); addRow();
+  for(let i=1;i<=5;i++){
+    const el=document.getElementById(`as${i}`);
+    if(el){ el.classList.remove('active','done'); if(i===1) el.classList.add('active'); }
+  }
+  sw(null,1);
+}
+
+// ── Navigation ────────────────────────────────
+function sw(from,to){
+  if(from){ const p=document.getElementById(`s${from}`); if(p) p.classList.remove('active'); }
+  else{ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); }
+  const n=document.getElementById(`s${to}`); if(n) n.classList.add('active');
+  document.getElementById('progBar').style.width=(to*20)+'%';
+  document.querySelectorAll('.prog-steps .s').forEach(s=>
+    s.classList.toggle('active',parseInt(s.dataset.n)===to));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── Helpers ───────────────────────────────────
+function fmtDate(iso){
+  if(!iso) return '';
+  return new Date(iso+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+}
+function toast(msg){
+  const ex=document.querySelector('.toast'); if(ex) ex.remove();
+  const t=document.createElement('div');
+  t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3400);
+}
+</script>
+</body>
+</html>
